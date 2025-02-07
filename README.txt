@@ -1,1 +1,1 @@
-This is a Masterblog wirth API Excercise from Masterschool Software Engineering Program.
+This is a Masterblog with API Excercise from Masterschool Software Engineering Program.
