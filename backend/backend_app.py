@@ -7,7 +7,21 @@ CORS(app)  # This will enable CORS for all routes
 POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
     {"id": 2, "title": "Second post", "content": "This is the second post."},
+    {"id": 3, "title": "Flask Tutorial", "content": "Learn Flask, a Python web framework."},
+    {"id": 4, "title": "React Basics", "content": "Introduction to React for frontend development."},
+    {"id": 5, "title": "Flask and React", "content": "Building full-stack apps with Flask and React."},
+    {"id": 6, "title": "Django vs Flask", "content": "Comparison between Django and Flask frameworks."},
+    {"id": 7, "title": "RESTful APIs", "content": "How to design RESTful APIs using Flask."},
+    {"id": 8, "title": "Frontend Development", "content": "Mastering HTML, CSS, and JavaScript for modern web apps."},
+    {"id": 9, "title": "Backend Development", "content": "Building scalable backends with Python and Flask."},
+    {"id": 10, "title": "Database Design", "content": "Best practices for designing relational databases."},
+    {"id": 11, "title": "Authentication in Flask", "content": "Implementing user authentication in Flask applications."},
+    {"id": 12, "title": "Testing Flask Apps", "content": "Writing unit tests for Flask APIs."},
+    {"id": 13, "title": "Deployment Guide", "content": "Deploying Flask apps to production servers."},
+    {"id": 14, "title": "JavaScript Frameworks", "content": "Exploring popular JavaScript frameworks like React, Angular, and Vue."},
+    {"id": 15, "title": "Python Tips and Tricks", "content": "Useful tips to improve your Python coding skills."},
 ]
+
 
 
 @app.route('/api/posts', methods=['GET'])
