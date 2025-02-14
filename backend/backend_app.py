@@ -116,6 +116,28 @@ def update_post(post_id):
         "content": post_to_update["content"]
     }), 200
 
+@app.route('/api/posts/search', methods=['GET'])
+def search_posts():
+    """Endpoint to search for posts by title or content."""
+    # Get query parameters from the request URL
+    title_query = request.args.get('title', '').strip().lower()
+    content_query = request.args.get('content', '').strip().lower()
+
+    # Filter posts based on the search terms
+    matching_posts = []
+    for post in POSTS:
+        # Check if the title contains the title_query (case-insensitive)
+        title_match = title_query in post['title'].lower()
+        # Check if the content contains the content_query (case-insensitive)
+        content_match = content_query in post['content'].lower()
+
+        # Include the post if it matches either the title or content query
+        if title_match or content_match:
+            matching_posts.append(post)
+
+    # Return the list of matching posts
+    return jsonify(matching_posts), 200
+
 
 
 if __name__ == '__main__':
