@@ -86,7 +86,35 @@ def delete_post(post_id):
     POSTS[:] = [post for post in POSTS if post["id"] != post_id]
 
     # Return a success message with status code 200 OK
-    return jsonify({"message": f"Post with id {post_id} has been deleted successfully."}), 2
+    return jsonify({"message": f"Post with id {post_id} has been deleted successfully."}), 200
+
+@app.route('/api/posts/<int:post_id>', methods=['PUT'])
+def update_post(post_id):
+    """Endpoint to update a post by its ID."""
+    # Find the post with the given ID
+    post_to_update = next((post for post in POSTS if post["id"] == post_id), None)
+
+    # If no post is found with the given ID, return a 404 Not Found response
+    if not post_to_update:
+        return jsonify({"error": f"Post with id {post_id} not found"}), 404
+
+    # Parse the JSON data from the request body
+    data = request.get_json()
+
+    # Update the title if provided, otherwise keep the current value
+    if 'title' in data:
+        post_to_update['title'] = data['title'].strip() or post_to_update['title']
+
+    # Update the content if provided, otherwise keep the current value
+    if 'content' in data:
+        post_to_update['content'] = data['content'].strip() or post_to_update['content']
+
+    # Return the updated post with status code 200 OK
+    return jsonify({
+        "id": post_to_update["id"],
+        "title": post_to_update["title"],
+        "content": post_to_update["content"]
+    }), 200
 
 
 
