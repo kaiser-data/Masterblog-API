@@ -72,6 +72,23 @@ def add_post():
     # Return the newly created post with status code 201 Created
     return jsonify(new_post), 201
 
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    """Endpoint to delete a post by its ID."""
+    # Find the post with the given ID
+    post_to_delete = next((post for post in POSTS if post["id"] == post_id), None)
+
+    # If no post is found with the given ID, return a 404 Not Found response
+    if not post_to_delete:
+        return jsonify({"error": f"Post with id {post_id} not found"}), 404
+
+    # Remove the post from the list
+    POSTS[:] = [post for post in POSTS if post["id"] != post_id]
+
+    # Return a success message with status code 200 OK
+    return jsonify({"message": f"Post with id {post_id} has been deleted successfully."}), 2
+
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
