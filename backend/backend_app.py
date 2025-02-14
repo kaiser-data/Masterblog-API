@@ -34,14 +34,25 @@ def add_post():
     # Parse the JSON data from the request body
     data = request.get_json()
 
-    # Validate that both 'title' and 'content' are provided
-    if not data or 'title' not in data or 'content' not in data:
-        return jsonify({"error": "Missing fields: title or content"}), 400
+    # Check if the request body is empty
+    if not data:
+        return jsonify({"error": "No data provided in the request body"}), 400
 
-    # Strip whitespace and check for empty strings
+    # Validate that both 'title' and 'content' are provided
+    missing_fields = []
+    if 'title' not in data:
+        missing_fields.append('title')
+    if 'content' not in data:
+        missing_fields.append('content')
+
+    if missing_fields:
+        return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
+
+    # Extract title and content from the request body
     title = data['title'].strip()
     content = data['content'].strip()
 
+    # Ensure title and content are not empty strings
     if not title or not content:
         return jsonify({"error": "Title and content must not be empty"}), 400
 
@@ -53,13 +64,14 @@ def add_post():
         "id": new_id,
         "title": title,
         "content": content
-    }
+            }
 
     # Add the new post to the list of posts
     POSTS.append(new_post)
 
     # Return the newly created post with status code 201 Created
     return jsonify(new_post), 201
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
