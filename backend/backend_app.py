@@ -23,10 +23,10 @@ POSTS = [
 ]
 
 
-
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     return jsonify(POSTS)
+
 
 @app.route('/api/posts', methods=['POST'])
 def add_post():
@@ -72,6 +72,7 @@ def add_post():
     # Return the newly created post with status code 201 Created
     return jsonify(new_post), 201
 
+
 @app.route('/api/posts/<int:post_id>', methods=['DELETE'])
 def delete_post(post_id):
     """Endpoint to delete a post by its ID."""
@@ -87,6 +88,7 @@ def delete_post(post_id):
 
     # Return a success message with status code 200 OK
     return jsonify({"message": f"Post with id {post_id} has been deleted successfully."}), 200
+
 
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
 def update_post(post_id):
@@ -116,6 +118,7 @@ def update_post(post_id):
         "content": post_to_update["content"]
     }), 200
 
+
 @app.route('/api/posts/search', methods=['GET'])
 def search_posts():
     """Endpoint to search for posts by title or content."""
@@ -137,6 +140,7 @@ def search_posts():
 
     # Return the list of matching posts
     return jsonify(matching_posts), 200
+
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
