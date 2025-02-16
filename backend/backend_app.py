@@ -1,153 +1,127 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import json
+from math import ceil
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # This will enable CORS for all routes
+CORS(app)  # Enable CORS for all routes
 
-POSTS = [
-    {"id": 1, "title": "First post", "content": "This is the first post."},
-    {"id": 2, "title": "Second post", "content": "This is the second post."},
-    {"id": 3, "title": "Flask Tutorial", "content": "Learn Flask, a Python web framework."},
-    {"id": 4, "title": "React Basics", "content": "Introduction to React for frontend development."},
-    {"id": 5, "title": "Flask and React", "content": "Building full-stack apps with Flask and React."},
-    {"id": 6, "title": "Django vs Flask", "content": "Comparison between Django and Flask frameworks."},
-    {"id": 7, "title": "RESTful APIs", "content": "How to design RESTful APIs using Flask."},
-    {"id": 8, "title": "Frontend Development", "content": "Mastering HTML, CSS, and JavaScript for modern web apps."},
-    {"id": 9, "title": "Backend Development", "content": "Building scalable backends with Python and Flask."},
-    {"id": 10, "title": "Database Design", "content": "Best practices for designing relational databases."},
-    {"id": 11, "title": "Authentication in Flask", "content": "Implementing user authentication in Flask applications."},
-    {"id": 12, "title": "Testing Flask Apps", "content": "Writing unit tests for Flask APIs."},
-    {"id": 13, "title": "Deployment Guide", "content": "Deploying Flask apps to production servers."},
-    {"id": 14, "title": "JavaScript Frameworks", "content": "Exploring popular JavaScript frameworks like React, Angular, and Vue."},
-    {"id": 15, "title": "Python Tips and Tricks", "content": "Useful tips to improve your Python coding skills."},
-]
+# Get the directory of the current script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Path to the .env file
+env_file = os.path.join(BASE_DIR, '.env')
 
-@app.route('/api/posts', methods=['GET'])
-def get_posts():
-    return jsonify(POSTS)
+# Load environment variables from the .env file
+load_dotenv(env_file)
 
+# Access the API key
+API_KEY = os.getenv('API_KEY')
+if not API_KEY:
+    raise ValueError("API_KEY is not set in the .env file.")
 
-@app.route('/api/posts', methods=['POST'])
-def add_post():
-    """Endpoint to add a new post."""
-    # Parse the JSON data from the request body
-    data = request.get_json()
+# Middleware to validate the API key
+@app.before_request
+def validate_api_key():
+    if request.method != 'OPTIONS':  # Skip validation for preflight requests
+        api_key = request.headers.get('X-API-Key')
+        if not api_key or api_key != API_KEY:
+            abort(401, description="Unauthorized: Invalid or missing API key.")
 
-    # Check if the request body is empty
-    if not data:
-        return jsonify({"error": "No data provided in the request body"}), 400
+# Configure rate limiting
+limiter = Limiter(
+    get_remote_address,  # Use the client's IP address for rate limiting
+    app=app,
+    default_limits=["10 per minute"],  # Default limit: 10 requests per minute
+    storage_uri="memory://",  # Store rate-limiting data in memory (use Redis for production)
+)
 
-    # Validate that both 'title' and 'content' are provided
-    missing_fields = []
-    if 'title' not in data:
-        missing_fields.append('title')
-    if 'content' not in data:
-        missing_fields.append('content')
+# Construct the path to the JSON file relative to the script's location
+data_file = os.path.join(BASE_DIR, 'posts_storage.json')
+print(data_file)
 
-    if missing_fields:
-        return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
+class PostManager:
+    """Class to manage posts operations like load, save, delete, update, etc."""
+    def __init__(self, data_file):
+        self.data_file = data_file
+        self.posts = self.load_posts()
 
-    # Extract title and content from the request body
-    title = data['title'].strip()
-    content = data['content'].strip()
+    def load_posts(self):
+        """Load posts from the JSON file."""
+        try:
+            with open(self.data_file, 'r', encoding='utf-8') as file:
+                print(f"Loading posts from {self.data_file}")
+                data = json.load(file)
+                print(f"Finished Loading from {self.data_file}")
+                return data
+        except FileNotFoundError:
+            print(f"File {self.data_file} not found. Starting with an empty list.")
+            return []
+        except json.JSONDecodeError:
+            print(f"Invalid JSON in {self.data_file}. Starting with an empty list.")
+            return []
 
-    # Ensure title and content are not empty strings
-    if not title or not content:
-        return jsonify({"error": "Title and content must not be empty"}), 400
+    def save_posts(self):
+        """Save posts to the JSON file."""
+        with open(self.data_file, 'w', encoding='utf-8') as file:
+            json.dump(self.posts, file, indent=4, ensure_ascii=False)
 
-    # Generate a unique ID for the new post
-    new_id = max((post['id'] for post in POSTS), default=0) + 1
+    def add_post(self, title, content):
+        """Add a new post."""
+        new_id = max((post['id'] for post in self.posts), default=0) + 1
+        new_post = {"id": new_id, "title": title, "content": content}
+        self.posts.append(new_post)
+        self.save_posts()
+        return new_post
 
-    # Create the new post object
-    new_post = {
-        "id": new_id,
-        "title": title,
-        "content": content
-            }
+    def delete_post(self, post_id):
+        """Delete a post by ID."""
+        post_to_delete = next((post for post in self.posts if post["id"] == post_id), None)
+        if not post_to_delete:
+            return None
+        self.posts = [post for post in self.posts if post["id"] != post_id]
+        self.save_posts()
+        return post_to_delete
 
-    # Add the new post to the list of posts
-    POSTS.append(new_post)
+    def update_post(self, post_id, title=None, content=None):
+        """Update a post by ID."""
+        post_to_update = next((post for post in self.posts if post["id"] == post_id), None)
+        if not post_to_update:
+            return None
+        if title is not None:
+            post_to_update['title'] = title.strip() or post_to_update['title']
+        if content is not None:
+            post_to_update['content'] = content.strip() or post_to_update['content']
+        self.save_posts()
+        return post_to_update
 
-    # Return the newly created post with status code 201 Created
-    return jsonify(new_post), 201
+    def search_posts(self, title_query="", content_query=""):
+        """Search posts by title or content."""
+        return [
+            post for post in self.posts
+            if (not title_query or title_query in post['title'].lower()) and
+               (not content_query or content_query in post['content'].lower())
+        ]
 
+# Initialize the PostManager with the data file
+post_manager = PostManager(data_file)
 
-@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
-def delete_post(post_id):
-    """Endpoint to delete a post by its ID."""
-    # Find the post with the given ID
-    post_to_delete = next((post for post in POSTS if post["id"] == post_id), None)
-
-    # If no post is found with the given ID, return a 404 Not Found response
-    if not post_to_delete:
-        return jsonify({"error": f"Post with id {post_id} not found"}), 404
-
-    # Remove the post from the list
-    POSTS[:] = [post for post in POSTS if post["id"] != post_id]
-
-    # Return a success message with status code 200 OK
-    return jsonify({"message": f"Post with id {post_id} has been deleted successfully."}), 200
-
-
-@app.route('/api/posts/<int:post_id>', methods=['PUT'])
-def update_post(post_id):
-    """Endpoint to update a post by its ID."""
-    # Find the post with the given ID
-    post_to_update = next((post for post in POSTS if post["id"] == post_id), None)
-
-    # If no post is found with the given ID, return a 404 Not Found response
-    if not post_to_update:
-        return jsonify({"error": f"Post with id {post_id} not found"}), 404
-
-    # Parse the JSON data from the request body
-    data = request.get_json()
-
-    # Update the title if provided, otherwise keep the current value
-    if 'title' in data:
-        post_to_update['title'] = data['title'].strip() or post_to_update['title']
-
-    # Update the content if provided, otherwise keep the current value
-    if 'content' in data:
-        post_to_update['content'] = data['content'].strip() or post_to_update['content']
-
-    # Return the updated post with status code 200 OK
-    return jsonify({
-        "id": post_to_update["id"],
-        "title": post_to_update["title"],
-        "content": post_to_update["content"]
-    }), 200
-
-
-@app.route('/api/posts/search', methods=['GET'])
-def search_posts():
-    """Endpoint to search for posts by title or content."""
-    # Get query parameters from the request URL
-    title_query = request.args.get('title', '').strip().lower()
-    content_query = request.args.get('content', '').strip().lower()
-
-    # Filter posts based on the search terms
-    matching_posts = []
-    for post in POSTS:
-        # Check if the title contains the title_query (case-insensitive)
-        title_match = title_query in post['title'].lower()
-        # Check if the content contains the content_query (case-insensitive)
-        content_match = content_query in post['content'].lower()
-
-        # Include the post if it matches either the title or content query
-        if title_match or content_match:
-            matching_posts.append(post)
-
-    # Return the list of matching posts
-    return jsonify(matching_posts), 200
-
-
-@app.route('/api/posts', methods=['GET'])
-def get_posts():
-    """Endpoint to retrieve all posts with optional sorting."""
-    # Get query parameters for sorting
-    sort_field = request.args.get('sort', '').strip().lower()  # Field to sort by (optional)
-    direction = request.args.get('direction', '').strip().lower()  # Sort direction (optional)
+# Version 1 Routes
+@app.route('/api/v1/posts', methods=['GET'])
+@limiter.limit("5 per minute")  # Custom rate limit for this endpoint
+def get_posts_v1():
+    """Endpoint to retrieve all posts with optional sorting and pagination."""
+    page = int(request.args.get('page', 1))  # Default to page 1
+    per_page = int(request.args.get('per_page', 5))  # Default to 5 posts per page
+    sort_field = request.args.get('sort', '').strip().lower()
+    direction = request.args.get('direction', '').strip().lower()
 
     # Validate sort field
     if sort_field and sort_field not in ['title', 'content']:
@@ -159,15 +133,93 @@ def get_posts():
 
     # Apply sorting if valid parameters are provided
     if sort_field and direction:
-        reverse = direction == 'desc'  # Reverse order if direction is 'desc'
-        sorted_posts = sorted(POSTS, key=lambda post: post[sort_field].lower(), reverse=reverse)
+        reverse = direction == 'desc'
+        sorted_posts = sorted(post_manager.posts, key=lambda post: post[sort_field].lower(), reverse=reverse)
     else:
-        # Return posts in their original order if no sorting parameters are provided
-        sorted_posts = POSTS
+        sorted_posts = post_manager.posts
 
-    # Return the list of posts
-    return jsonify(sorted_posts), 200
+    # Paginate the results
+    total_posts = len(sorted_posts)
+    total_pages = ceil(total_posts / per_page)
 
+    if total_posts == 0:
+        return jsonify({
+            "page": 1,
+            "per_page": per_page,
+            "total_posts": 0,
+            "total_pages": 0,
+            "posts": []
+        }), 200
+
+    if page < 1 or page > total_pages:
+        return jsonify({"error": f"Invalid page number. Must be between 1 and {total_pages}."}), 400
+
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+    paginated_posts = sorted_posts[start_index:end_index]
+
+    return jsonify({
+        "page": page,
+        "per_page": per_page,
+        "total_posts": total_posts,
+        "total_pages": total_pages,
+        "posts": paginated_posts
+    }), 200
+
+@app.route('/api/v1/posts', methods=['POST'])
+@limiter.limit("5 per minute")  # Custom rate limit for this endpoint
+def add_post_v1():
+    """Endpoint to add a new post."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided in the request body"}), 400
+
+    missing_fields = []
+    if 'title' not in data:
+        missing_fields.append('title')
+    if 'content' not in data:
+        missing_fields.append('content')
+
+    if missing_fields:
+        return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
+
+    title = data['title'].strip()
+    content = data['content'].strip()
+
+    if not title or not content:
+        return jsonify({"error": "Title and content must not be empty"}), 400
+
+    new_post = post_manager.add_post(title, content)
+    return jsonify(new_post), 201
+
+@app.route('/api/v1/posts/<int:post_id>', methods=['DELETE'])
+@limiter.limit("5 per minute")  # Custom rate limit for this endpoint
+def delete_post_v1(post_id):
+    """Endpoint to delete a post by its ID."""
+    deleted_post = post_manager.delete_post(post_id)
+    if not deleted_post:
+        return jsonify({"error": f"Post with id {post_id} not found"}), 404
+    return jsonify({"message": f"Post with id {post_id} has been deleted successfully."}), 200
+
+@app.route('/api/v1/posts/<int:post_id>', methods=['PUT'])
+@limiter.limit("5 per minute")  # Custom rate limit for this endpoint
+def update_post_v1(post_id):
+    """Endpoint to update a post by its ID."""
+    data = request.get_json()
+    title = data.get('title', None)
+    content = data.get('content', None)
+    updated_post = post_manager.update_post(post_id, title, content)
+    if not updated_post:
+        return jsonify({"error": f"Post with id {post_id} not found"}), 404
+    return jsonify(updated_post), 200
+
+@app.route('/api/v1/posts/search', methods=['GET'])
+@limiter.limit("5 per minute")  # Custom rate limit for this endpoint
+def search_posts_v1():
+    title_query = request.args.get('title', '').strip().lower()
+    content_query = request.args.get('content', '').strip().lower()
+    matching_posts = post_manager.search_posts(title_query, content_query)
+    return jsonify(matching_posts), 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
