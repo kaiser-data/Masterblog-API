@@ -2,6 +2,13 @@
 
 A full-stack chess blog application with a Flask RESTful API backend and an interactive JavaScript frontend. Features include post management, pagination, sorting, and Swagger documentation.
 
+## App Interface
+![Frontend App](./images/chess_blog.png)
+
+## Endpoints Swagger UI
+![Swagger UI](./images/swagger_ui.png)
+
+
 ## 🌟 Features
 
 ### Backend
