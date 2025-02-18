@@ -17,6 +17,7 @@ from math import ceil
 from datetime import datetime
 from config import Config
 
+
 # Set up logging configuration
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

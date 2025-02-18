@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timedelta
 
+
 # Function to generate chess-themed posts
 def generate_chess_posts(num_posts=50):
     posts = []
@@ -34,6 +35,7 @@ def generate_chess_posts(num_posts=50):
         posts.append(post)
 
     return posts
+
 
 # Save posts to a JSON file
 if __name__ == "__main__":
