@@ -1,1 +1,0 @@
-This is a Masterblog with API Excercise from Masterschool Software Engineering Program.

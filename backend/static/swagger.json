@@ -5,7 +5,7 @@
     "description": "A simple blog API for managing posts.",
     "version": "1.0.0"
   },
-  "host": "regionbeyond-andreaantonio-5002.codio.io",
+  "host": "regionbeyond-andreaantonio-5001.codio.io",
   "basePath": "/api/v1",
   "schemes": ["https"],
   "tags": [
