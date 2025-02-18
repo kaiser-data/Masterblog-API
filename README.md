@@ -5,7 +5,7 @@ A full-stack chess blog application with a Flask RESTful API backend and an inte
 ## App Interface
 ![Frontend App](./images/chess_blog.png)
 
-## Endpoints Swagger UI
+## Swagger Documentation
 ![Swagger UI](./images/swagger_ui.png)
 
 
