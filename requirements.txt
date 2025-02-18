@@ -1,0 +1,25 @@
+
+# Core Flask dependencies
+Flask==3.0.2
+flask-cors==4.0.0
+flask-limiter==3.5.0
+flask-swagger-ui==4.11.1
+
+# Schema validation
+marshmallow==3.20.2
+
+# Date and time handling
+python-dateutil==2.8.2
+
+# Development and debugging
+python-dotenv==1.0.1
+Werkzeug==3.0.1
+
+# JSON handling (included in Python standard library, listed for clarity)
+json5==0.9.14
+
+# Logging (included in Python standard library, listed for clarity)
+logging==0.4.9.6
+
+# Math functions (included in Python standard library, listed for clarity)
+math==0.0.1

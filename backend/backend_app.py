@@ -5,7 +5,6 @@ This module provides a RESTful API for creating, reading, updating, and deleting
 It includes features such as pagination, sorting, search, rate limiting, and API key authentication.
 """
 
-
 from flask import Flask, jsonify, request, abort, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -17,7 +16,6 @@ import logging
 from math import ceil
 from datetime import datetime
 from config import Config
-
 
 # Set up logging configuration
 logger = logging.getLogger(__name__)
@@ -100,6 +98,7 @@ class PostSchema(Schema):
     content = fields.Str(required=True)
     author = fields.Str(required=True)
     date = fields.Date(required=True, format="%Y-%m-%d")
+
 
 post_schema = PostSchema()
 
@@ -231,6 +230,7 @@ class PostManager:
             results = [post for post in results if date.lower() in post['date'].lower()]
         return results
 
+
 # Initialize the post manager with configured storage
 post_manager = PostManager(Config.STORAGE_FILE)
 
@@ -263,8 +263,8 @@ def get_posts_v1():
         return jsonify({"error": "Invalid sort direction"}), 400
 
     sorted_posts = sorted(post_manager.posts,
-                         key=lambda post: post.get(sort_field, ""),
-                         reverse=(sort_direction == 'desc')) if sort_field else post_manager.posts
+                          key=lambda post: post.get(sort_field, ""),
+                          reverse=(sort_direction == 'desc')) if sort_field else post_manager.posts
 
     total_posts = len(sorted_posts)
     total_pages = ceil(total_posts / items_per_page) or 1
