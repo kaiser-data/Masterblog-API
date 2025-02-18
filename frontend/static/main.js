@@ -1,72 +1,131 @@
-// Function that runs once the window is fully loaded
-window.onload = function() {
-    // Attempt to retrieve the API base URL from the local storage
-    var savedBaseUrl = localStorage.getItem('apiBaseUrl');
-    // If a base URL is found in local storage, load the posts
-    if (savedBaseUrl) {
-        document.getElementById('api-base-url').value = savedBaseUrl;
-        loadPosts();
+let currentPage = 1;
+let currentSortField = null;
+let currentSortDirection = "asc";
+
+// Load posts from the API
+function loadPosts(page) {
+    currentPage = page;
+    const baseUrl = document.getElementById('api-base-url').value;
+    let url = `${baseUrl}/posts?page=${page}&per_page=5`;
+    if (currentSortField) {
+        url += `&sort=${currentSortField}&direction=${currentSortDirection}`;
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const postContainer = document.getElementById('post-container');
+            postContainer.innerHTML = ''; // Clear previous posts
+
+            data.posts.forEach(post => {
+                const postDiv = document.createElement('div');
+                postDiv.className = 'post';
+                postDiv.innerHTML = `
+                    <h2>${post.title}</h2>
+                    <p><strong>Author:</strong> ${post.author}</p>
+                    <p><strong>Date:</strong> ${post.date}</p>
+                    <p>${post.content}</p>
+                    <button onclick="deletePost(${post.id})">Delete</button>
+                    <button onclick="populateFormForUpdate(${post.id})">Edit</button>
+                `;
+                postContainer.appendChild(postDiv);
+            });
+
+            updatePaginationControls(data.page, data.total_pages);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Update pagination controls
+function updatePaginationControls(currentPage, totalPages) {
+    const paginationContainer = document.getElementById('pagination-container');
+    paginationContainer.innerHTML = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.innerText = i;
+        button.disabled = i === currentPage;
+        button.onclick = () => loadPosts(i);
+        paginationContainer.appendChild(button);
     }
 }
 
-// Function to fetch all the posts from the API and display them on the page
-function loadPosts() {
-    // Retrieve the base URL from the input field and save it to local storage
-    var baseUrl = document.getElementById('api-base-url').value;
-    localStorage.setItem('apiBaseUrl', baseUrl);
-
-    // Use the Fetch API to send a GET request to the /posts endpoint
-    fetch(baseUrl + '/posts')
-        .then(response => response.json())  // Parse the JSON data from the response
-        .then(data => {  // Once the data is ready, we can use it
-            // Clear out the post container first
-            const postContainer = document.getElementById('post-container');
-            postContainer.innerHTML = '';
-
-            // For each post in the response, create a new post element and add it to the page
-            data.forEach(post => {
-                const postDiv = document.createElement('div');
-                postDiv.className = 'post';
-                postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p>
-                <button onclick="deletePost(${post.id})">Delete</button>`;
-                postContainer.appendChild(postDiv);
-            });
-        })
-        .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
+// Toggle sorting
+function toggleSort(field) {
+    if (currentSortField === field) {
+        currentSortDirection = currentSortDirection === "asc" ? "desc" : "asc";
+    } else {
+        currentSortField = field;
+        currentSortDirection = "asc";
+    }
+    loadPosts(currentPage);
 }
 
-// Function to send a POST request to the API to add a new post
-function addPost() {
-    // Retrieve the values from the input fields
-    var baseUrl = document.getElementById('api-base-url').value;
-    var postTitle = document.getElementById('post-title').value;
-    var postContent = document.getElementById('post-content').value;
-
-    // Use the Fetch API to send a POST request to the /posts endpoint
-    fetch(baseUrl + '/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: postTitle, content: postContent })
-    })
-    .then(response => response.json())  // Parse the JSON data from the response
-    .then(post => {
-        console.log('Post added:', post);
-        loadPosts(); // Reload the posts after adding a new one
-    })
-    .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
-}
-
-// Function to send a DELETE request to the API to delete a post
+// Delete a post
 function deletePost(postId) {
-    var baseUrl = document.getElementById('api-base-url').value;
+    const baseUrl = document.getElementById('api-base-url').value;
+    fetch(`${baseUrl}/posts/${postId}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(() => loadPosts(currentPage))
+        .catch(error => console.error('Error:', error));
+}
 
-    // Use the Fetch API to send a DELETE request to the specific post's endpoint
-    fetch(baseUrl + '/posts/' + postId, {
-        method: 'DELETE'
-    })
-    .then(response => {
-        console.log('Post deleted:', postId);
-        loadPosts(); // Reload the posts after deleting one
-    })
-    .catch(error => console.error('Error:', error));  // If an error occurs, log it to the console
+// Populate form for updating a post
+function populateFormForUpdate(postId) {
+    const baseUrl = document.getElementById('api-base-url').value;
+
+    fetch(`${baseUrl}/posts/${postId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Post not found');
+            }
+            return response.json();
+        })
+        .then(post => {
+            document.getElementById('post-id').value = post.id;
+            document.getElementById('post-title').value = post.title || '';
+            document.getElementById('post-content').value = post.content || '';
+            document.getElementById('post-author').value = post.author || '';
+            document.getElementById('post-date').value = post.date || '';
+        })
+        .catch(error => {
+            console.error('Error fetching post:', error);
+            alert('Failed to load post details. Please try again.');
+        });
+}
+
+// Add or update a post
+function addOrUpdatePost() {
+    const baseUrl = document.getElementById('api-base-url').value;
+    const postId = document.getElementById('post-id').value;
+    const title = document.getElementById('post-title').value.trim();
+    const content = document.getElementById('post-content').value.trim();
+    const author = document.getElementById('post-author').value.trim();
+    const date = document.getElementById('post-date').value.trim();
+
+    if (!title || !content || !author || !date) {
+        alert('All fields are required.');
+        return;
+    }
+
+    const url = postId ? `${baseUrl}/posts/${postId}` : `${baseUrl}/posts`;
+    const method = postId ? 'PUT' : 'POST';
+    const body = JSON.stringify({ title, content, author, date });
+
+    fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body })
+        .then(response => response.json())
+        .then(() => {
+            loadPosts(currentPage);
+            clearForm();
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Clear the form
+function clearForm() {
+    document.getElementById('post-id').value = '';
+    document.getElementById('post-title').value = '';
+    document.getElementById('post-content').value = '';
+    document.getElementById('post-author').value = '';
+    document.getElementById('post-date').value = '';
 }

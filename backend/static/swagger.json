@@ -1,0 +1,252 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Masterblog API",
+    "description": "A simple blog API for managing posts.",
+    "version": "1.0.0"
+  },
+  "host": "regionbeyond-andreaantonio-5002.codio.io",
+  "basePath": "/api/v1",
+  "schemes": ["https"],
+  "tags": [
+    {
+      "name": "Post",
+      "description": "Post API - CRUD operations"
+    }
+  ],
+  "securityDefinitions": {
+    "ApiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-API-Key"
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/posts": {
+      "get": {
+        "summary": "Retrieve all posts",
+        "tags": ["Post"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "description": "Page number for pagination",
+            "required": false,
+            "type": "integer",
+            "default": 1
+          },
+          {
+            "in": "query",
+            "name": "per_page",
+            "description": "Number of posts per page",
+            "required": false,
+            "type": "integer",
+            "default": 5
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "description": "Field to sort by",
+            "required": false,
+            "type": "string",
+            "enum": ["title", "content", "author", "date"]
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "description": "Sort direction",
+            "required": false,
+            "type": "string",
+            "enum": ["asc", "desc"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "page": { "type": "integer" },
+                "per_page": { "type": "integer" },
+                "total_posts": { "type": "integer" },
+                "total_pages": { "type": "integer" },
+                "posts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "title": { "type": "string" },
+                      "content": { "type": "string" },
+                      "author": { "type": "string" },
+                      "date": { "type": "string", "format": "date" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new post",
+        "tags": ["Post"],
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Post object to be created",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "content": { "type": "string" },
+                "author": { "type": "string" },
+                "date": { "type": "string", "format": "date" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Post created successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          }
+        }
+      }
+    },
+    "/posts/{post_id}": {
+      "delete": {
+        "summary": "Delete a post by ID",
+        "tags": ["Post"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "description": "ID of the post to delete",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post deleted successfully"
+          },
+          "404": {
+            "description": "Post not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a post by ID",
+        "tags": ["Post"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "description": "ID of the post to update",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Updated post data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "content": { "type": "string" },
+                "author": { "type": "string" },
+                "date": { "type": "string", "format": "date" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post updated successfully"
+          },
+          "404": {
+            "description": "Post not found"
+          }
+        }
+      }
+    },
+    "/posts/search": {
+      "get": {
+        "summary": "Search posts by query, title, content, author, or date",
+        "tags": ["Post"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "description": "Search query for title, content, author, or date",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "title",
+            "description": "Filter by title",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "content",
+            "description": "Filter by content",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "author",
+            "description": "Filter by author",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "description": "Filter by date",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of posts matching the query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "title": { "type": "string" },
+                  "content": { "type": "string" },
+                  "author": { "type": "string" },
+                  "date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
