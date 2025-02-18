@@ -12,7 +12,12 @@ function loadPosts(page) {
     }
 
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             const postContainer = document.getElementById('post-container');
             postContainer.innerHTML = ''; // Clear previous posts
@@ -82,7 +87,7 @@ function populateFormForUpdate(postId) {
             return response.json();
         })
         .then(post => {
-            document.getElementById('post-id').value = post.id;
+            document.getElementById('post-id').value = post.id || '';
             document.getElementById('post-title').value = post.title || '';
             document.getElementById('post-content').value = post.content || '';
             document.getElementById('post-author').value = post.author || '';
@@ -115,8 +120,8 @@ function addOrUpdatePost() {
     fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body })
         .then(response => response.json())
         .then(() => {
-            loadPosts(currentPage);
-            clearForm();
+            loadPosts(currentPage); // Reload posts after adding/updating
+            clearForm(); // Clear the form fields
         })
         .catch(error => console.error('Error:', error));
 }
